@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'map_data.dart'; // This should contain your GoogleMapsDataGetter class.
-export 'package:hive/hive.dart';
-export 'package:hive_flutter/hive_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,73 +11,61 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const Maps(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
+class Maps extends StatefulWidget {
+  const Maps({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<Maps> createState() => MapState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  late GoogleMapsDataGetter getter;
-  Map<String, dynamic> _dcData = {};
+class MapState extends State<Maps> {
+  late GoogleMapController mapController;
+  final List<Marker> _markers = [];
+  bool showMap = true;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the GoogleMapsDataGetter asynchronously.
-    GoogleMapsDataGetter.create().then((value) {
-      setState(() {
-        getter = value;
-      });
-    });
-  }
-
-  // Fetch the place details for Washington, DC.
-  // Replace the place ID below with a valid one for Washington, DC.
-  void _fetchDCData() async {
-    // Ensure getter is initialized before calling the API.
-    const dcPlaceId = "ChIJW-T2Wt7Gt4kR3D7xJ1A1_wU"; // Example DC place ID.
-    final data = await getter.getPlaceDetails(dcPlaceId);
-    setState(() {
-      _dcData = data;
-    });
+    _markers.add(
+      Marker(
+        markerId: MarkerId("myLocation"),
+        position: LatLng(26.78688, 25.76393),
+      ),
+    );
+    // In this case, showMap is already true, so setState is not strictly necessary here.
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
       body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Data for Washington, DC:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              _dcData.isNotEmpty
-                  ? Text(_dcData.toString())
-                  : const Text('No data loaded yet.'),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _fetchDCData,
-        tooltip: 'Fetch DC Data',
-        child: const Icon(Icons.location_city),
+        child: showMap
+            ? Container(
+                height: 500,
+                width: 1230,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: GoogleMap(
+                  onMapCreated: (controller) {
+                    setState(() {
+                      mapController = controller;
+                    });
+                  },
+                  markers: Set<Marker>.of(_markers),
+                  mapType: MapType.terrain,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(26.78688, 25.76393),
+                    zoom: 13,
+                  ),
+                ),
+              )
+            : const CircularProgressIndicator(color: Colors.amber),
       ),
     );
   }
